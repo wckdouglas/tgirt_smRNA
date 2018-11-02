@@ -153,13 +153,14 @@ def mean_cpm(count_mat):
 
 def make_pca_df():
     tables = glob.glob('/stor/work/Lambowitz/cdw2854/miRNA/new_NTT/*counts')
+    tables = glob.glob('../data/*counts')
     tables = filter(lambda x: re.search('NTT[0-9]+', x), tables)
     df = pd.concat(map(read_count_table, tables))\
         .groupby('seq_id', as_index=False)\
         .agg({'seq_count':'sum'})\
         .assign(cpm = lambda d: count_to_cpm(d.seq_count)) 
 
-    data_df = pd.read_table('/stor/work/Lambowitz/cdw2854/miRNA/tgirt_data/counts/HM_NTT1.base_table.tsv') \
+    data_df = seq_to_base_table('../data/MiRxplorer.fa') \
         .merge(df, on = 'seq_id', how='right') 
 
     transform_df = data_df.pipe(preprocess_dataframe)

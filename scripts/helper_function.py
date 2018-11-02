@@ -167,6 +167,7 @@ prep_encoder = {'4N': '#D55E00',
                  'TruSeq': 'gray',
                 'CircLigase':'#5e0700'}
 figure_path = '/stor/work/Lambowitz/cdw2854/miRNA/new_NTT'
+figure_path = '../figures'
 
 
 def get_published(return_count = False):
@@ -192,6 +193,7 @@ def get_published(return_count = False):
 
 def get_seq_base(shuffle=None):
     fa = '/stor/work/Lambowitz/ref/Mir9_2/MiRxplorer.fa'
+    fa = '../data/MiRxplorer.fa'
     bases = []
     if not shuffle:
         indices = [0,1,2,-3,-2,-1]

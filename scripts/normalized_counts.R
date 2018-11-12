@@ -25,6 +25,7 @@ ntt_df <-  rbind(gene_df, ercc_df) %>%
 
 
 count_mat <- ntt_df %>% select(-ID, -Name, -Type) %>% data.frame()
+count_mat[count_mat<10] <- 0
 row.names(ntt_df$ID)
 col_data <- data.frame(samplename = names(count_mat)) %>%
     mutate(treatment = samplename) %>%
@@ -37,7 +38,6 @@ dds <- DESeqDataSetFromMatrix(countData = count_mat,
 dds <- estimateSizeFactors(dds) 
 count_data <- counts(dds, normalized=T) %>%
     data.frame() %>%
-    rownames_to_column('ID') %>%
     cbind(ntt_df %>% select(ID:Type)) %>%
     tbl_df %>%
     write_tsv('../data/normalized_counts.tsv')

@@ -12,6 +12,15 @@ rf = importr('randomForest')
 stats = importr('stats')
 
 class R_randomForest():
+    '''
+    Random forest regression model ported from R using rpy2
+    Interface followed sklearn:
+    implemented functions:
+    1. fit
+    2. predict
+    3. fit_transform
+    3. score
+    '''
     def __init__(self):
         self.formula = Formula('Y~.')
         self.fitted_rf = None
@@ -25,6 +34,10 @@ class R_randomForest():
     def predict(self, X):
         pred = stats.predict(self.fitted_rf, pandas2ri.DataFrame(X))
         return pandas2ri.ri2py_vector(pred)
+    
+    def fit_transform(X, Y):
+        self.fit(X, Y)
+        return self.predict(X)
 
     def score(self, X, y):
         pred_Y = self.predict(pandas2ri.DataFrame(X))
@@ -34,6 +47,11 @@ class R_randomForest():
 
 
 def rename_col(x):
+    '''
+    rename column names such that:
+    head0 -->> 1
+    tail0 --> -3
+    '''
     out = ''
     if 'head' in x:
         out = '+' + str(int(x.replace('head','')) + 1)
@@ -44,12 +62,20 @@ def rename_col(x):
     return out
 
 def train_to_cat(d):
+    '''
+    categorize all nucleotide columns
+    '''
     for col in d.columns:
         if col != 'Y':
             d[col] = d[col].astype('category')
     return d
 
 def test_nucleotides(nucleotides=[0,1,2,-3,-2,-1], return_model = False, validation = False):
+    '''
+    extract nucleotides from miRNAs according to positions (input: nucleotides)
+    train model and test model
+    return the test data frame
+    '''
 
     rf = R_randomForest()
     label = 'End nucleotides' if set(nucleotides) - set([0,1,2,-3,-2,-1]) == set() else 'Random predictors'

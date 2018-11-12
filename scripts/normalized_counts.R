@@ -20,7 +20,8 @@ abrf <- read_tsv('/stor/work/Lambowitz/Data/archived_work/2016/TGIRT_ERCC_projec
     rename(id = 'ID') %>%
     tbl_df
 ntt_df <-  rbind(gene_df, ercc_df) %>%
-    inner_join(abrf) 
+    inner_join(abrf)  %>%
+    filter(!grepl('rRNA', Type))
 
 
 count_mat <- ntt_df %>% select(-ID, -Name, -Type) %>% data.frame()
@@ -35,8 +36,8 @@ dds <- DESeqDataSetFromMatrix(countData = count_mat,
                         design = ~treatment)
 dds <- estimateSizeFactors(dds) 
 count_data <- counts(dds, normalized=T) %>%
-    rownames_to_column('ID') %>%
     data.frame() %>%
+    rownames_to_column('ID') %>%
     cbind(ntt_df %>% select(ID:Type)) %>%
     tbl_df %>%
     write_tsv('../data/normalized_counts.tsv')

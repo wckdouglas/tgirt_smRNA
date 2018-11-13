@@ -21,12 +21,14 @@ abrf <- read_tsv('/stor/work/Lambowitz/Data/archived_work/2016/TGIRT_ERCC_projec
     tbl_df
 ntt_df <-  rbind(gene_df, ercc_df) %>%
     inner_join(abrf)  %>%
-    filter(!grepl('rRNA', Type))
+    filter(!grepl('rRNA', Type)) %>%
+    filter(grepl('protein|ERCC', Type)) %>%
+    tbl_df
 
 
 count_mat <- ntt_df %>% select(-ID, -Name, -Type) %>% data.frame()
 count_mat[count_mat<10] <- 0
-row.names(ntt_df$ID)
+row.names(count_mat) <- ntt_df$ID
 col_data <- data.frame(samplename = names(count_mat)) %>%
     mutate(treatment = samplename) %>%
     data.frame()
@@ -35,7 +37,9 @@ row.names(col_data) <- col_data$samplename
 dds <- DESeqDataSetFromMatrix(countData = count_mat,
                         colData = col_data,
                         design = ~treatment)
-dds <- estimateSizeFactors(dds) 
+genes <- row.names(counts(dds))
+ercc <- grepl('^ERCC-',genes)
+dds <- estimateSizeFactors(dds)#, controlGenes=ercc) 
 count_data <- counts(dds, normalized=T) %>%
     data.frame() %>%
     cbind(ntt_df %>% select(ID:Type)) %>%

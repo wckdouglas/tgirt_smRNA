@@ -196,6 +196,7 @@ def plot_R2(res_df, ax, ce):
             color = r2_df.colors.tolist())
     ax.xaxis.set_visible(False)
     ax.set_ylabel('$R^2$')
+    return r2_df
 
 
 def plot_test(test_df, control_test_df, ax):

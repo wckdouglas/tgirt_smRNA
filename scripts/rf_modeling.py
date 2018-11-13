@@ -3,6 +3,7 @@ from rpy2.robjects import pandas2ri, Formula
 from rpy2.robjects.packages import importr
 import rpy2.rinterface as ri
 from sklearn.metrics import r2_score
+from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.model_selection import train_test_split
 import pandas as pd
 from helper_function import *
@@ -11,7 +12,7 @@ pandas2ri.activate()
 rf = importr('randomForest')
 stats = importr('stats')
 
-class R_randomForest():
+class R_randomForest(BaseEstimator, TransformerMixin):
     '''
     Random forest regression model ported from R using rpy2
     Interface followed sklearn:

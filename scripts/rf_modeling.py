@@ -7,11 +7,16 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.model_selection import train_test_split, KFold
 import pandas as pd
 from helper_function import *
-
+import h2o
+from h2o.estimators.random_forest import H2ORandomForestEstimator
+h2o.init()
+h2o.no_progress()
 pandas2ri.activate()
 rf = importr('randomForest')
 stats = importr('stats')
 
+use_h2o = False
+#use_h2o = True
 class R_randomForest(BaseEstimator, TransformerMixin):
     '''
     Random forest regression model ported from R using rpy2
@@ -28,13 +33,20 @@ class R_randomForest(BaseEstimator, TransformerMixin):
 
 
     def fit(self, X, Y):
-        X['Y'] = Y
-        X = pandas2ri.DataFrame(X) 
+        self.X = X
+        self.Y = Y
+        self.X['Y'] = self.Y
+        X = pandas2ri.DataFrame(self.X) 
         self.fitted_rf = rf.randomForest(formula = self.formula, data = X)
 
     def predict(self, X):
         pred = stats.predict(self.fitted_rf, pandas2ri.DataFrame(X))
         return pandas2ri.ri2py_vector(pred)
+    
+    def coefficients(self):
+        var = pandas2ri.ri2py_vector(self.fitted_rf.rx2('importance')).reshape(-1)
+        return pd.DataFrame({'imp_score': var,
+            'variable': self.X.drop('Y', axis=1).columns})
     
     def score(self, X, y):
         pred_Y = self.predict(pandas2ri.DataFrame(X))
@@ -44,9 +56,6 @@ class R_randomForest(BaseEstimator, TransformerMixin):
 
 class h2o_randomForest(BaseEstimator, TransformerMixin):
     def __init__(self):
-        import h2o
-        from h2o.estimators.random_forest import H2ORandomForestEstimator
-        h2o.init()
         self.rf = H2ORandomForestEstimator()
 
     def fit(self, X, y):
@@ -65,12 +74,14 @@ class h2o_randomForest(BaseEstimator, TransformerMixin):
         self.rf.train(x_colnames, 'y', training_frame=train_df)
 
 
-    def coeficients(self):
+    def coefficients(self):
         '''
         return variable importance
         '''
         return self.rf._model_json['output']['variable_importances']\
-            .as_data_frame()
+            .as_data_frame() \
+            .filter(['variable','relative_importance'])\
+            .rename(columns = {'relative_importance':'imp_score'})
 
     def predict(self, X):
         '''
@@ -127,7 +138,7 @@ def test_nucleotides(nucleotides=[0,1,2,-3,-2,-1], return_model = False, validat
     return the test data frame
     '''
 
-    rf = R_randomForest()
+    rf = R_randomForest() if not use_h2o else h2o_randomForest()
     label = 'End nucleotides' if set(nucleotides) - set([0,1,2,-3,-2,-1]) == set() else 'Random predictors'
     df = pd.read_feather('../data/miR_count.feather') \
         .groupby(["prep","seq_id"], as_index=False) \
@@ -162,7 +173,7 @@ def k_fold_cv(train_df, test_df):
     and return prediction results on test data frame
     and variance importance
     '''
-    rf = R_randomForest()
+    rf = R_randomForest() if not use_h2o else h2o_randomForest()
     kf = KFold(n_splits = 8, random_state=123)
     res_df = []
     var_df = []
@@ -175,10 +186,8 @@ def k_fold_cv(train_df, test_df):
         rf.fit(X, Y)
         pred = rf.predict(sub_test_df)
         
-        var = pandas2ri.ri2py_vector(rf.fitted_rf.rx2('importance')).reshape(-1)
-        var_df.append(pd.DataFrame({'imp_score': var,
-                            'k' : i,
-                            'variable': sub_train_df.drop('Y', axis=1).columns}))
+        var = rf.coefficients()
+        var_df.append(var.assign(k = i))
         res_df.append(pd.DataFrame({'pred': pred, 'Y': sub_test_df['Y'], 'k': i}))
         #print(sub_test_df.shape)
     res_df = pd.concat(res_df)

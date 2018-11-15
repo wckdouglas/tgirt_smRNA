@@ -99,6 +99,8 @@ def get_label(x):
         lab = 'UMI'
     elif 'circ' in x:
         lab = 'CircLigase'
+    elif 'MTT' in x:
+        lab = 'MTT'
     return lab
 
 def correct_prep(x):

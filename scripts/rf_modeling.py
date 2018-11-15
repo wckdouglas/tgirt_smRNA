@@ -36,14 +36,61 @@ class R_randomForest(BaseEstimator, TransformerMixin):
         pred = stats.predict(self.fitted_rf, pandas2ri.DataFrame(X))
         return pandas2ri.ri2py_vector(pred)
     
-    def fit_transform(X, Y):
-        self.fit(X, Y)
-        return self.predict(X)
-
     def score(self, X, y):
         pred_Y = self.predict(pandas2ri.DataFrame(X))
         pred_Y = pandas2ri.ri2py_vector(pred_Y)
         return r2_score(pred_Y, y)
+
+
+class h2o_randomForest(BaseEstimator, TransformerMixin):
+    def __init__(self):
+        import h2o
+        from h2o.estimators.random_forest import H2ORandomForestEstimator
+        h2o.init()
+        self.rf = H2ORandomForestEstimator()
+
+    def fit(self, X, y):
+        '''
+        X: pandas dataframe (n x m)
+        y: numpy array (n)
+        '''
+        X_row, X_col  = X.shape
+        assert(X_row > 0 and X_col > 0)
+        x_colnames = X.columns.tolist()
+
+        assert(y.ndim == 1 and X_row == len(y))
+        X.reset_index(inplace=True)
+        X['y'] = y.tolist()
+        train_df = h2o.H2OFrame.from_python(X)
+        self.rf.train(x_colnames, 'y', training_frame=train_df)
+
+
+    def coeficients(self):
+        '''
+        return variable importance
+        '''
+        return self.rf._model_json['output']['variable_importances']\
+            .as_data_frame()
+
+    def predict(self, X):
+        '''
+        X: dataframe containing training columns
+        return: predicted values (list)
+        '''
+        X = h2o.H2OFrame.from_python(X) 
+        y = self.rf.predict(X)
+        return y.as_data_frame()['predict'].tolist()
+    
+    def score(self, X, y):
+        pred_Y = self.predict(X)
+        return r2_score(pred_Y, y)
+
+    def save_model(self, model_file):
+        model_path = h2o.save_model(model=self.rf,  path = model_file)
+        return model_path
+
+    def load_model(self, model_path):
+        self.rf = h2o.load_model(model_path)
 
 
 

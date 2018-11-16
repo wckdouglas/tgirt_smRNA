@@ -1,22 +1,25 @@
-import rpy2
-from rpy2.robjects import pandas2ri, Formula
-from rpy2.robjects.packages import importr
-import rpy2.rinterface as ri
 from sklearn.metrics import r2_score
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.model_selection import train_test_split, KFold
 import pandas as pd
 from helper_function import *
-import h2o
-from h2o.estimators.random_forest import H2ORandomForestEstimator
-h2o.init()
-h2o.no_progress()
-pandas2ri.activate()
-rf = importr('randomForest')
-stats = importr('stats')
-
 use_h2o = False
 #use_h2o = True
+
+if use_h2o:
+    import h2o
+    from h2o.estimators.random_forest import H2ORandomForestEstimator
+    h2o.init()
+    h2o.no_progress()
+else:
+    import rpy2
+    from rpy2.robjects import pandas2ri, Formula
+    from rpy2.robjects.packages import importr
+    import rpy2.rinterface as ri
+    rf = importr('randomForest')
+    stats = importr('stats')
+    pandas2ri.activate()
+
 class R_randomForest(BaseEstimator, TransformerMixin):
     '''
     Random forest regression model ported from R using rpy2
@@ -27,6 +30,7 @@ class R_randomForest(BaseEstimator, TransformerMixin):
     3. fit_transform
     3. score
     '''
+    
     def __init__(self):
         self.formula = Formula('Y~.')
         self.fitted_rf = None
@@ -55,6 +59,7 @@ class R_randomForest(BaseEstimator, TransformerMixin):
 
 
 class h2o_randomForest(BaseEstimator, TransformerMixin):
+
     def __init__(self):
         self.rf = H2ORandomForestEstimator()
 

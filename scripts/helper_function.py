@@ -89,6 +89,8 @@ def get_label(x):
         lab = 'Diaminopurine'
     if 'noTA' in x:
         lab = 'NTT-noTA'
+    elif 'NTT-6N' in x:
+        lab = 'NTT/6N'
     elif 'NTTR' in x:
         lab = 'NTTR'
     elif 'NTT' in x:
@@ -117,6 +119,8 @@ def correct_prep(x):
         prep = 'TruSeq'
     elif 'NTC' in x or re.search('R[0-9]', x):
         prep = 'NTC'
+    elif 'NTT' in x and '6N' in x:
+        prep = 'NTT/6N'
     elif 'NTTR' in x:
         prep = 'NTTR'
     elif 'noTA' in x:
@@ -148,6 +152,7 @@ prep_encoder = {'4N': '#D55E00',
                  'NTT': '#0072B2',
                  'MTT': '#E69F00',
                  '6N-NTTR': 'black',
+                 'NTTR/6N': 'black',
                  'NTTR': '#96b6ea',
                  'TruSeq': '#CC79A7',
                  'NTC (Corrected)': 'red',
@@ -161,6 +166,8 @@ prep_encoder = {'4N': '#D55E00',
                  'NTT-noTA': 'red',
                  'MTT': 'red',
                  '6N-NTTR': 'red',
+                 'NTTR/6N': 'red',
+                 'NTT/6N': 'red',
                  'NTTR': 'red',
                  '4N': '#D55E00',
                  'NEXTflex': '#D55E00',
@@ -540,9 +547,15 @@ def cpm_plot(plot_df, ax):
         .assign(cpm = lambda d: d.groupby('prep_name')['seq_count']\
                             .transform(lambda x: 1e6 * x / x.sum()))\
         .assign(log_cpm = lambda d: d.cpm.transform(lambda x: np.log10(x+1))) \
-        .assign(error_cpm = lambda d: d.groupby('prep').log_cpm.transform(lambda x: x.median() - 1e6/962)) \
+        .assign(error_cpm = lambda d: d.groupby('prep').log_cpm.transform(lambda x: x.median() - np.log10(1e6/962))) \
         .sort_values('error_cpm', ascending=False) \
         .pipe(lambda d: d[~d.prep.isin(['MTT (Corrected)','6N-NTTR (Corrected)'])])#,'NTTR (Corrected)'])])
+
+    median_df = cpm_df\
+        .filter(['prep','error_cpm'])\
+        .drop_duplicates()\
+        .assign(error_cpm = lambda d: d.error_cpm +  np.log10(1e6/962))\
+        .assign(x = lambda d: np.arange(d.shape[0]))
 
     colors = cpm_df[['prep','error_cpm']].drop_duplicates().prep.map(prep_encoder)
     sns.violinplot(data = cpm_df, 
@@ -554,6 +567,8 @@ def cpm_plot(plot_df, ax):
     ax.hlines(y = np.log10(1e6/962), xmin = -100, 
           xmax = 1e8, color = 'red')
     xt = ax.set_xticklabels(ax.get_xticklabels(), rotation = 70, ha = 'right', rotation_mode='anchor')
+    ax.plot(median_df['x'], median_df['error_cpm'], color = 'steelblue')
+
     #xt = [xt.set_color(col) for xt, col in zip(ax.get_xticklabels(), colors)]
     ax.set_yticks(range(0,6))
     yts = ['$10^%i$' %(i) for i in range(0,6)]

@@ -501,3 +501,64 @@ def plot_rmse_strip(ax, published, corrected, original):
         if 'Corrected' in xt.get_text():
             xt.set_color('red')
     sns.despine()
+
+
+def depth_plot(plot_df, ax):
+    '''
+    plot saturation curve
+    '''
+    scatter_df = plot_df\
+        .query('seq_count > 0')\
+        .groupby(['prep','samplename'], as_index=False)\
+        .agg({'seq_count':'sum',
+             'cpm':'count'}) 
+
+    for prep, prep_df in scatter_df.groupby('prep'):
+        alpha = 0.1 if prep == "TruSeq" else 0.8
+        ax.scatter(prep_df.seq_count/1e6, 
+               prep_df.cpm,
+               label = prep, 
+               color = prep_encoder[prep],
+               alpha = alpha, 
+               s = 100)
+    
+    pat = [mpatches.Patch(color=prep_encoder[lab], label=lab) for lab in sorted(plot_df.prep.unique())]
+    ax.legend(handles = pat, frameon=False, fontsize =15, loc = 'lower right')
+
+    ax.hlines(y = 962, xmin = -100, 
+              xmax = 1e8, color = 'red')
+    ax.set_xlim(0, 35)
+    ax.set_xlabel('Sequencing depth (Million)')
+    ax.set_ylabel('Number of miRNA with non-zero count')
+
+def cpm_plot(plot_df, ax):
+    '''
+    plot violin cpm
+    '''
+    cpm_df = plot_df \
+        .groupby(['prep_name','id','prep'], as_index=False) \
+        .agg({'seq_count':'sum'})\
+        .assign(cpm = lambda d: d.groupby('prep_name')['seq_count']\
+                            .transform(lambda x: 1e6 * x / x.sum()))\
+        .assign(log_cpm = lambda d: d.cpm.transform(lambda x: np.log10(x+1))) \
+        .assign(error_cpm = lambda d: d.groupby('prep').log_cpm.transform(lambda x: x.median() - 1e6/962)) \
+        .sort_values('error_cpm', ascending=False) \
+        .pipe(lambda d: d[~d.prep.isin(['MTT (Corrected)','6N-NTTR (Corrected)'])])#,'NTTR (Corrected)'])])
+
+    colors = cpm_df[['prep','error_cpm']].drop_duplicates().prep.map(prep_encoder)
+    sns.violinplot(data = cpm_df, 
+               x = 'prep', 
+                cut = 0 ,
+               y = 'log_cpm', 
+               palette = colors,
+               ax = ax)
+    ax.hlines(y = np.log10(1e6/962), xmin = -100, 
+          xmax = 1e8, color = 'red')
+    xt = ax.set_xticklabels(ax.get_xticklabels(), rotation = 70, ha = 'right', rotation_mode='anchor')
+    #xt = [xt.set_color(col) for xt, col in zip(ax.get_xticklabels(), colors)]
+    ax.set_yticks(range(0,6))
+    yts = ['$10^%i$' %(i) for i in range(0,6)]
+    yts = ax.set_yticklabels(yts)
+    ax.set_xlabel('small RNA-seq prep')
+    ax.set_ylabel('CPM ($log_{10}$)')
+    ax.set_xlim(-0.5, len(colors))

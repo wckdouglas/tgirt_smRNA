@@ -174,10 +174,10 @@ figure_path = '../figures'
 
 def get_published(return_count = False):
     #published dataframe
-    id_table = pd.read_table('/stor/work/Lambowitz/ref/Mir9_2/MiRxplorer.fa.fai',
+    id_table = pd.read_table('../data/MiRxplorer.fa.fai',
                             names = ['id','0','1','2','3'])
-    sample_table = pd.read_table('/stor/home/cdw2854/miRNA_seq/download_data/sra.tsv', names=['GSM','prep_name'])   
-    pdf=pd.read_table('/stor/work/Lambowitz/cdw2854/miRNA/published_data/mirExplore_count.tsv') \
+    sample_table = pd.read_table('../download_data/sra.tsv', names=['GSM','prep_name'])   
+    pdf=pd.read_table('../data/others_mirExplore_count.tsv') \
                 .pipe(pd.melt,id_vars='id', 
                               var_name='samplename', 
                               value_name='count') \
@@ -194,7 +194,6 @@ def get_published(return_count = False):
 
 
 def get_seq_base(shuffle=None):
-    fa = '/stor/work/Lambowitz/ref/Mir9_2/MiRxplorer.fa'
     fa = '../data/MiRxplorer.fa'
     bases = []
     if not shuffle:

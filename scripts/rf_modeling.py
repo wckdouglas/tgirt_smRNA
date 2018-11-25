@@ -39,10 +39,10 @@ class R_randomForest(BaseEstimator, TransformerMixin):
 
 
     def fit(self, X, Y):
-        self.X = X
+        self.X = X.reset_index(drop=True)
         self.Y = Y
-        self.X.loc[:, 'Y'] = self.Y
-        X = pandas2ri.DataFrame(self.X) 
+        self.X.loc[:, 'Y'] = self.Y.values
+        X = pandas2ri.DataFrame(self.X)
         self.fitted_rf = rf.randomForest(formula = self.formula, data = X, 
                                         ntree = self.ntrees,
                                         mtry = self.mtry)
@@ -58,7 +58,6 @@ class R_randomForest(BaseEstimator, TransformerMixin):
     
     def score(self, X, y):
         pred_Y = self.predict(pandas2ri.DataFrame(X))
-        pred_Y = pandas2ri.ri2py_vector(pred_Y)
         return r2_score(pred_Y, y)
 
 
@@ -83,7 +82,6 @@ class h2o_randomForest(BaseEstimator, TransformerMixin):
         X.loc[:,'y'] = y.values()
         train_df = h2o.H2OFrame.from_python(X)
         self.rf.train(x_colnames, 'y', training_frame=train_df)
-
 
     def coefficients(self):
         '''
@@ -139,7 +137,7 @@ def train_to_cat(d):
     '''
     for col in d.columns:
         if col != 'Y':
-            d[col] = d[col].astype('category')
+            d.loc[:, col] = d[col].astype('category')
     return d
 
 def test_nucleotides(nucleotides=[0,1,2,-3,-2,-1], return_model = False, validation = False):

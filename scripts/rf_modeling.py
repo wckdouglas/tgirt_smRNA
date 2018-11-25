@@ -31,17 +31,21 @@ class R_randomForest(BaseEstimator, TransformerMixin):
     3. score
     '''
     
-    def __init__(self):
+    def __init__(self, ntrees = 50, mtry = 2):
         self.formula = Formula('Y~.')
         self.fitted_rf = None
+        self.ntrees = ntrees
+        self.mtry = mtry
 
 
     def fit(self, X, Y):
         self.X = X
         self.Y = Y
-        self.X['Y'] = self.Y
+        self.X.loc[:, 'Y'] = self.Y
         X = pandas2ri.DataFrame(self.X) 
-        self.fitted_rf = rf.randomForest(formula = self.formula, data = X)
+        self.fitted_rf = rf.randomForest(formula = self.formula, data = X, 
+                                        ntree = self.ntrees,
+                                        mtry = self.mtry)
 
     def predict(self, X):
         pred = stats.predict(self.fitted_rf, pandas2ri.DataFrame(X))
@@ -60,8 +64,10 @@ class R_randomForest(BaseEstimator, TransformerMixin):
 
 class h2o_randomForest(BaseEstimator, TransformerMixin):
 
-    def __init__(self):
-        self.rf = H2ORandomForestEstimator()
+    def __init__(self, ntrees=50, stopping_rounds = 2, seed = 1):
+        self.rf = H2ORandomForestEstimator(ntrees=ntrees,
+                                            stopping_rounds = stopping_rounds,
+                                            seed = seed)
 
     def fit(self, X, y):
         '''
@@ -73,8 +79,8 @@ class h2o_randomForest(BaseEstimator, TransformerMixin):
         x_colnames = X.columns.tolist()
 
         assert(y.ndim == 1 and X_row == len(y))
-        X.reset_index(inplace=True)
-        X['y'] = y.tolist()
+        X.reset_index(inplace=True, drop=True)
+        X.loc[:,'y'] = y.values()
         train_df = h2o.H2OFrame.from_python(X)
         self.rf.train(x_colnames, 'y', training_frame=train_df)
 

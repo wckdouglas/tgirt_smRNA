@@ -31,7 +31,7 @@ class R_randomForest(BaseEstimator, TransformerMixin):
     3. score
     '''
     
-    def __init__(self, ntrees = 50, mtry = 2):
+    def __init__(self, ntrees = 500, mtry = 2):
         self.formula = Formula('Y~.')
         self.fitted_rf = None
         self.ntrees = ntrees
@@ -39,10 +39,9 @@ class R_randomForest(BaseEstimator, TransformerMixin):
 
 
     def fit(self, X, Y):
-        self.X = X.reset_index(drop=True)
-        self.Y = Y
-        self.X.loc[:, 'Y'] = self.Y.values
-        X = pandas2ri.DataFrame(self.X)
+        X = X.reset_index(drop=True)
+        X.loc[:, 'Y'] = Y.values
+        X = pandas2ri.DataFrame(X)
         self.fitted_rf = rf.randomForest(formula = self.formula, data = X, 
                                         ntree = self.ntrees,
                                         mtry = self.mtry)
@@ -58,12 +57,12 @@ class R_randomForest(BaseEstimator, TransformerMixin):
     
     def score(self, X, y):
         pred_Y = self.predict(pandas2ri.DataFrame(X))
-        return r2_score(pred_Y, y)
+        return r2_score(y, pred_Y)
 
 
 class h2o_randomForest(BaseEstimator, TransformerMixin):
 
-    def __init__(self, ntrees=50, stopping_rounds = 2, seed = 1):
+    def __init__(self, ntrees=500, stopping_rounds = 2, seed = 1):
         self.rf = H2ORandomForestEstimator(ntrees=ntrees,
                                             stopping_rounds = stopping_rounds,
                                             seed = seed)
@@ -79,7 +78,7 @@ class h2o_randomForest(BaseEstimator, TransformerMixin):
 
         assert(y.ndim == 1 and X_row == len(y))
         X.reset_index(inplace=True, drop=True)
-        X.loc[:,'y'] = y.values()
+        X.loc[:,'y'] = y.values
         train_df = h2o.H2OFrame.from_python(X)
         self.rf.train(x_colnames, 'y', training_frame=train_df)
 
@@ -99,11 +98,11 @@ class h2o_randomForest(BaseEstimator, TransformerMixin):
         '''
         X = h2o.H2OFrame.from_python(X) 
         y = self.rf.predict(X)
-        return y.as_data_frame()['predict'].tolist()
+        return y.as_data_frame()['predict'].values
     
     def score(self, X, y):
         pred_Y = self.predict(X)
-        return r2_score(pred_Y, y)
+        return r2_score(y, pred_Y)
 
     def save_model(self, model_file):
         model_path = h2o.save_model(model=self.rf,  path = model_file)

@@ -20,7 +20,7 @@ else:
     stats = importr('stats')
     pandas2ri.activate()
 
-class R_randomForest(BaseEstimator, TransformerMixin):
+class R_randomForest(BaseEstimator, TransformerMixin, RegressorMixin):
     '''
     Random forest regression model ported from R using rpy2
     Interface followed sklearn:
@@ -52,13 +52,8 @@ class R_randomForest(BaseEstimator, TransformerMixin):
         return pd.DataFrame({'imp_score': var,
             'variable': self.X.drop('Y', axis=1).columns})
     
-    def score(self, X, y):
-        pred_Y = self.predict(pandas2ri.DataFrame(X))
-        pred_Y = pandas2ri.ri2py_vector(pred_Y)
-        return r2_score(pred_Y, y)
 
-
-class h2o_randomForest(BaseEstimator, TransformerMixin):
+class h2o_randomForest(BaseEstimator, TransformerMixin, RegressorMixin):
 
     def __init__(self):
         self.rf = H2ORandomForestEstimator()
@@ -97,10 +92,6 @@ class h2o_randomForest(BaseEstimator, TransformerMixin):
         y = self.rf.predict(X)
         return y.as_data_frame()['predict'].tolist()
     
-    def score(self, X, y):
-        pred_Y = self.predict(X)
-        return r2_score(pred_Y, y)
-
     def save_model(self, model_file):
         model_path = h2o.save_model(model=self.rf,  path = model_file)
         return model_path

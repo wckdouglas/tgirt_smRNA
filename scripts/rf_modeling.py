@@ -1,5 +1,5 @@
 from sklearn.metrics import r2_score
-from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.base import BaseEstimator, TransformerMixin, RegressorMixin
 from sklearn.model_selection import train_test_split, KFold
 import pandas as pd
 from helper_function import *

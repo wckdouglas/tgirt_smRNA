@@ -182,5 +182,5 @@ rule train_table:
         WEIGHT_TABLE
 
     shell:
-        'tgirt_correction.py train -i {input} -x {output} --iter {params.ITER} '
+        'tgirt_correction.py train -i {input} -x {output} --iter {params.ITER} -n 4 '
 

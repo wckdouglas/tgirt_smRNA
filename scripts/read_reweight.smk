@@ -146,7 +146,7 @@ rule correction:
 
     shell:
         'tgirt_correction.py correct '\
-        '-i {input.BAM}  '\
+        '-i {input.BAM} -t "ZW" '\
         '-x {input.IDX} -o {output} '
         
 

@@ -116,8 +116,8 @@ rule end_nuc:
                 count = aln.get_tag('ZW') if aln.has_tag('ZW') else 1
                 for i, b in enumerate(aln.get_forward_sequence()[:15]):
                     base_count[read][i][b] += count
-                if read_count == 100000:
-                    break
+#                if read_count == 100000:
+#                    break
         
         dfs = []
         for end, end_dict in base_count.items():
@@ -176,7 +176,7 @@ rule train_table:
         ERCC_PATH + '/NTTF1.bam'
 
     params:
-        ITER = 500000
+        ITER = 1000000
 
     output:
         WEIGHT_TABLE

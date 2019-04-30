@@ -1,4 +1,5 @@
 import pysam
+import re
 import pandas as pd
 from collections import defaultdict
 
@@ -19,6 +20,8 @@ END_BASE_TABLE = COUNT_BAM_TEMPLATE.replace('.bam','.csv')
 OUT_COUNT_TABLE = MIR_PATH + '/mir_count.feather'
 NUC_COUNT_TABLE = MIR_PATH + '/nuc_count.feather'
 SAMPLENAMES, = glob_wildcards(MIR_BAM_TEMPLATE)
+SAMPLENAMES = filter(lambda x: re.search('NTT[0-9]+$',x), SAMPLENAMES)
+SAMPLENAMES = list(SAMPLENAMES)
 
 
 rule all:
@@ -176,7 +179,7 @@ rule train_table:
         ERCC_PATH + '/NTTF1.bam'
 
     params:
-        ITER = 1000000
+        ITER = 500000
 
     output:
         WEIGHT_TABLE

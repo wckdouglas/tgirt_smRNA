@@ -179,11 +179,11 @@ rule train_table:
         ERCC_PATH + '/NTTF1.bam'
 
     params:
-        ITER = 1000000
+        ITER = 2000000
 
     output:
         WEIGHT_TABLE
 
     shell:
-        'tgirt_correction.py train -i {input} -x {output} --iter {params.ITER} -n 4 '
-
+        'tgirt_correction.py train -i {input} -x {output} '\
+        '--iter {params.ITER} -n 3 -l 30 --offset 4 --debug '
